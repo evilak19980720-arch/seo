@@ -89,12 +89,16 @@ class ObjectStorage
      */
     protected static function oss(array $config, string $key, string $content, string $mime): string
     {
-        $endpoint = preg_replace('#^https?://#', '', rtrim((string) ($config['end_point'] ?? ''), '/'));
+        $bucket = trim((string) $config['bucket']);
+        // 兼容填成 https://bucket.oss-xx.aliyuncs.com/ 的写法：去掉协议、路径和开头的 Bucket 名
+        $endpoint = explode('/', (string) preg_replace('#^https?://#i', '', trim((string) ($config['end_point'] ?? ''))))[0];
+        if ($bucket !== '' && str_starts_with(strtolower($endpoint), strtolower($bucket).'.')) {
+            $endpoint = substr($endpoint, strlen($bucket) + 1);
+        }
         if (! $endpoint) {
             throw new FailedException('请先在「系统管理 → 上传配置」里填写阿里云 OSS 的 end_point，例如 oss-cn-hongkong.aliyuncs.com');
         }
 
-        $bucket = $config['bucket'];
         $date = gmdate('D, d M Y H:i:s \G\M\T');
         $toSign = "PUT\n\n{$mime}\n{$date}\n/{$bucket}/{$key}";
         $signature = base64_encode(hash_hmac('sha1', $toSign, $config['secret_key'], true));
