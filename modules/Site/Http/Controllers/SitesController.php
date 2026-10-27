@@ -25,7 +25,6 @@ class SitesController extends Controller
         $keywords = trim((string) request('keywords'));
 
         return $this->model->setBeforeGetList(fn ($query) => $query->with([
-            'server:id,name,ip',
             'cloudflareAccount:id,name',
             'profile:id,site_id,status',
         ])->when($keywords !== '', fn ($query) => $query->where(fn ($q) => $q->where('name', 'like', "%{$keywords}%")->orWhere('domain', 'like', "%{$keywords}%"))))->getList();

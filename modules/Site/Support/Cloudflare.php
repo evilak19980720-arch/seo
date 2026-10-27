@@ -81,6 +81,58 @@ class Cloudflare
         }
     }
 
+    /**
+     * 把根域名解析到 IP，www 用 CNAME 指向根域名（重复执行会更新为新 IP）
+     */
+    public function pointDomain(string $zoneId, string $domain, string $ip, bool $proxied = true, bool $withWww = true): void
+    {
+        $type = str_contains($ip, ':') ? 'AAAA' : 'A';
+        $this->removeConflicts($zoneId, $domain, $type);
+        $this->upsertRecord($zoneId, $type, $domain, $ip, $proxied);
+        if ($withWww) {
+            $this->removeConflicts($zoneId, 'www.'.$domain, 'CNAME');
+            $this->upsertRecord($zoneId, 'CNAME', 'www.'.$domain, $domain, $proxied);
+        }
+    }
+
+    /**
+     * 同名的 A / AAAA / CNAME 记录会互相冲突，写入前删掉其他类型的旧记录
+     */
+    protected function removeConflicts(string $zoneId, string $name, string $keepType): void
+    {
+        foreach ($this->request('get', "/zones/{$zoneId}/dns_records", ['name' => $name]) ?? [] as $record) {
+            if (in_array($record['type'] ?? '', ['A', 'AAAA', 'CNAME'], true) && $record['type'] !== $keepType) {
+                $this->request('delete', "/zones/{$zoneId}/dns_records/{$record['id']}");
+            }
+        }
+    }
+
+    /**
+     * 账号下的域名（Zone），每页最多 50 个
+     *
+     * @return array{items: array<int, array{id: string, name: string, status: string}>, total: int}
+     */
+    public function listZones(string $accountId, int $page = 1, string $name = ''): array
+    {
+        $response = $this->http()->get(self::BASE_URL.'/zones', array_filter([
+            'account.id' => $accountId,
+            'page' => $page,
+            'per_page' => 50,
+            'name' => $name !== '' ? 'contains:'.$name : null,
+        ]));
+        $body = $response->json() ?? [];
+        if (! $response->successful() || ! ($body['success'] ?? false)) {
+            $message = collect($body['errors'] ?? [])->map(fn ($error) => ($error['code'] ?? '').' '.($error['message'] ?? ''))->implode('; ');
+
+            throw new FailedException('Cloudflare 接口错误：'.($message ?: 'HTTP '.$response->status()));
+        }
+
+        return [
+            'items' => array_map(fn ($zone) => ['id' => $zone['id'], 'name' => $zone['name'], 'status' => $zone['status']], $body['result'] ?? []),
+            'total' => (int) ($body['result_info']['total_count'] ?? 0),
+        ];
+    }
+
     public function setting(string $zoneId, string $setting, string $value): void
     {
         $this->request('patch', "/zones/{$zoneId}/settings/{$setting}", ['value' => $value]);

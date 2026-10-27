@@ -26,8 +26,8 @@ return new class extends Seeder
             ], [
                 $this->menu('站点列表', 'sites', 'sites', '/site/sites/index.vue', 1, ['onboard' => '重新接入']),
                 $this->menu('游戏资料', 'profiles', 'gameProfiles', '', 4, ['regenerate' => '重新生成', 'confirm' => '确认', 'unconfirm' => '撤销确认'], ['show' => '读取', 'update' => '更新'], true),
-                $this->menu('服务器', 'servers', 'servers', '/site/servers/index.vue', 2),
-                $this->menu('Cloudflare 账号', 'cloudflare', 'cloudflareAccounts', '/site/cloudflare/index.vue', 3, ['verify' => '校验 Token']),
+                $this->menu('Cloudflare 账号', 'cloudflare', 'cloudflareAccounts', '/site/cloudflare/index.vue', 2, ['verify' => '校验 Token', 'zones' => '域名列表', 'resolve' => '批量解析']),
+                $this->menu('批量解析记录', 'dns', 'dnsTasks', '/site/dns/index.vue', 3, [], ['index' => '列表', 'retry' => '重试', 'destroy' => '删除']),
             ]),
         ];
     }

@@ -22,7 +22,7 @@ class SettingsController extends Controller
 
     public function store(Request $request): bool
     {
-        $request->validate(['head_code' => ['nullable', 'string', 'max:20000'], 'body_code' => ['nullable', 'string', 'max:20000'], 'footer_text' => ['nullable', 'string', 'max:500']]);
+        $request->validate(['default_ip' => ['nullable', 'ip'], 'head_code' => ['nullable', 'string', 'max:20000'], 'body_code' => ['nullable', 'string', 'max:20000'], 'footer_text' => ['nullable', 'string', 'max:500']]);
 
         return FrontSetting::saveAll($request->only(array_keys(FrontSetting::schema())));
     }

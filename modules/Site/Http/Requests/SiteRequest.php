@@ -38,7 +38,7 @@ class SiteRequest extends FormRequest
                 'integer',
                 Rule::exists('site_cloudflare_accounts', 'id')->where('status', Status::Enable->value)->where('deleted_at', 0),
             ],
-            'server_id' => ['nullable', 'integer'],
+            'ip' => ['nullable', 'ip'],
             'locale' => ['required', 'string', 'max:10'],
             'title' => ['nullable', 'string', 'max:191'],
             'description' => ['nullable', 'string', 'max:500'],
@@ -52,7 +52,7 @@ class SiteRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'name' => '网站名称', 'domain' => '域名', 'cloudflare_account_id' => 'Cloudflare 账号', 'server_id' => '服务器',
+            'name' => '网站名称', 'domain' => '域名', 'cloudflare_account_id' => 'Cloudflare 账号', 'ip' => '解析 IP',
             'locale' => '语言', 'title' => '标题', 'description' => '描述', 'keywords' => '关键词', 'logo' => 'Logo', 'game_brief' => '游戏说明',
         ];
     }

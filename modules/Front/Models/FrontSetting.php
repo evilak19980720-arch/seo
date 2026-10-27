@@ -27,6 +27,7 @@ class FrontSetting extends Model
     public static function schema(): array
     {
         return [
+            'default_ip' => ['default' => '', 'type' => 'text', 'label' => '默认解析 IP', 'help' => '添加网站时没有填写 IP 就用这个，批量解析也会默认填入'],
             'head_code' => ['default' => '', 'type' => 'code', 'label' => '统计代码（head）', 'help' => '输出到所有站点的 </head> 前，例如 Google Analytics 4 代码；用同一个 GA4 媒体资源时按主机名区分站点'],
             'body_code' => ['default' => '', 'type' => 'code', 'label' => '页面底部代码', 'help' => '输出到所有站点的 </body> 前'],
             'footer_text' => ['default' => '', 'type' => 'text', 'label' => '页脚附加文字', 'help' => '例如公司名称、联系方式，{site} 会替换为网站名称'],

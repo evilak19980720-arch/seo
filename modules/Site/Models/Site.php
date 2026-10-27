@@ -5,19 +5,21 @@ declare(strict_types=1);
 namespace Modules\Site\Models;
 
 use Catch\Base\CatchModel as Model;
+use Catch\Exceptions\FailedException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\DB;
+use Modules\Front\Models\FrontSetting;
 use Modules\Site\Enums\OnboardStatus;
 use Modules\Site\Jobs\GenerateGameProfile;
 use Modules\Site\Jobs\OnboardSite;
+use Modules\Site\Jobs\SyncSiteDns;
 
 /**
  * @property int $id
  * @property string $name
  * @property string $domain
  * @property string $locale
- * @property int $server_id
+ * @property string $ip
  * @property int $cloudflare_account_id
  * @property string $zone_id
  * @property array|null $name_servers
@@ -25,7 +27,6 @@ use Modules\Site\Jobs\OnboardSite;
  * @property string $onboard_error
  * @property int $online_at
  * @property int $status
- * @property Server|null $server
  * @property CloudflareAccount|null $cloudflareAccount
  * @property GameProfile|null $profile
  */
@@ -35,38 +36,32 @@ class Site extends Model
 
     protected $fillable = [
         'id', 'name', 'domain', 'locale', 'title', 'description', 'keywords', 'logo', 'game_brief',
-        'server_id', 'cloudflare_account_id', 'zone_id', 'name_servers', 'onboard_status', 'onboard_error', 'online_at',
+        'cloudflare_account_id', 'ip', 'zone_id', 'name_servers', 'onboard_status', 'onboard_error', 'online_at',
         'status', 'creator_id', 'created_at', 'updated_at', 'deleted_at',
     ];
 
     protected array $fields = [
-        'id', 'name', 'domain', 'locale', 'logo', 'server_id', 'cloudflare_account_id', 'name_servers',
+        'id', 'name', 'domain', 'locale', 'logo', 'ip', 'cloudflare_account_id', 'name_servers',
         'onboard_status', 'onboard_error', 'online_at', 'status', 'created_at',
     ];
 
-    protected array $form = ['name', 'domain', 'locale', 'title', 'description', 'keywords', 'logo', 'game_brief', 'server_id', 'cloudflare_account_id', 'status'];
+    protected array $form = ['name', 'domain', 'locale', 'title', 'description', 'keywords', 'logo', 'game_brief', 'ip', 'cloudflare_account_id', 'status'];
 
     public array $searchable = [
         'name' => 'like',
         'domain' => 'like',
-        'server_id' => '=',
+        'ip' => '=',
         'onboard_status' => '=',
         'status' => '=',
     ];
 
     protected $casts = [
         'name_servers' => 'array',
-        'server_id' => 'integer',
         'cloudflare_account_id' => 'integer',
         'onboard_status' => 'integer',
         'online_at' => 'integer',
         'status' => 'integer',
     ];
-
-    public function server(): BelongsTo
-    {
-        return $this->belongsTo(Server::class, 'server_id');
-    }
 
     public function profile(): HasOne
     {
@@ -92,19 +87,18 @@ class Site extends Model
     }
 
     /**
-     * 新增站点：分配服务器后进入接入队列
+     * 新增站点：进入接入队列，同时生成游戏资料和模板
      */
     public function createSite(array $data): int
     {
         $data['domain'] = static::normalizeDomain($data['domain']);
+        $data['ip'] = ($data['ip'] ?? '') ?: (string) FrontSetting::get('default_ip');
+        if ($data['ip'] === '') {
+            throw new FailedException('请填写解析 IP，或在「全局配置」里设置默认解析 IP');
+        }
+        $data['onboard_status'] = OnboardStatus::Pending->value;
 
-        $site = DB::transaction(function () use ($data) {
-            $server = app(Server::class)->allocate(empty($data['server_id']) ? null : (int) $data['server_id']);
-            $data['server_id'] = $server->id;
-            $data['onboard_status'] = OnboardStatus::Pending->value;
-
-            return static::query()->find($this->storeBy($data));
-        });
+        $site = static::query()->find($this->storeBy($data));
 
         OnboardSite::dispatch($site->id);
         GameProfile::forSite($site->id);
@@ -114,24 +108,29 @@ class Site extends Model
     }
 
     /**
-     * 编辑站点：域名、服务器和 Cloudflare 账号创建后不在这里修改，避免和已写入的 DNS 不一致
+     * 编辑站点：域名和 Cloudflare 账号创建后不能修改；修改 IP 会同步更新解析
      */
     public function updateSite(int $id, array $data): mixed
     {
-        unset($data['domain'], $data['server_id'], $data['cloudflare_account_id']);
+        unset($data['domain'], $data['cloudflare_account_id']);
+        $site = static::query()->findOrFail($id);
+        $ipChanged = ! empty($data['ip']) && $data['ip'] !== $site->ip;
+        if (array_key_exists('ip', $data) && ! $data['ip']) {
+            unset($data['ip']);
+        }
 
-        return $this->updateBy($id, $data);
+        $updated = $this->updateBy($id, $data);
+
+        if ($ipChanged && $site->zone_id) {
+            SyncSiteDns::dispatch($site->id);
+        }
+
+        return $updated;
     }
 
     public function deleteSite(int $id): mixed
     {
-        $site = static::query()->findOrFail($id);
-
-        return DB::transaction(function () use ($site, $id) {
-            app(Server::class)->release($site->server_id);
-
-            return $this->deleteBy($id);
-        });
+        return $this->deleteBy($id);
     }
 
     /**

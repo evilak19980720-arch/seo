@@ -53,14 +53,14 @@ class OnboardSite implements ShouldQueue
 
     public function handle(): void
     {
-        $site = Site::query()->with(['server', 'cloudflareAccount'])->find($this->siteId);
+        $site = Site::query()->with(['cloudflareAccount'])->find($this->siteId);
 
         if (! $site || $site->onboard_status === OnboardStatus::Online->value) {
             return;
         }
 
-        if (! $site->server || ! $site->cloudflareAccount) {
-            $this->fail(new \RuntimeException('站点缺少服务器或 Cloudflare 账号'));
+        if (! $site->ip || ! $site->cloudflareAccount) {
+            $this->fail(new \RuntimeException('站点缺少解析 IP 或 Cloudflare 账号'));
 
             return;
         }
@@ -95,11 +95,7 @@ class OnboardSite implements ShouldQueue
 
         // 3. 写 DNS 和 SSL 设置（重复执行也安全）
         if ($site->onboard_status !== OnboardStatus::DnsReady->value) {
-            $ip = $site->server->ip;
-            $type = str_contains($ip, ':') ? 'AAAA' : 'A';
-
-            $cloudflare->upsertRecord($site->zone_id, $type, $site->domain, $ip);
-            $cloudflare->upsertRecord($site->zone_id, 'CNAME', 'www.'.$site->domain, $site->domain);
+            $cloudflare->pointDomain($site->zone_id, $site->domain, $site->ip);
             // Full：Cloudflare 到源站加密但不校验证书，源站用自签或 Origin CA 证书都可以
             // 以后为每个域名签发 Origin CA 证书后可改为 strict
             $cloudflare->setting($site->zone_id, 'ssl', self::SSL_MODE);
