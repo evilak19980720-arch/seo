@@ -25,6 +25,7 @@ return new class extends Seeder
                 'sort' => 2,
             ], [
                 $this->menu('站点列表', 'sites', 'sites', '/site/sites/index.vue', 1, ['onboard' => '重新接入']),
+                $this->menu('游戏资料', 'profiles', 'gameProfiles', '', 4, ['regenerate' => '重新生成', 'confirm' => '确认', 'unconfirm' => '撤销确认'], ['show' => '读取', 'update' => '更新'], true),
                 $this->menu('服务器', 'servers', 'servers', '/site/servers/index.vue', 2),
                 $this->menu('Cloudflare 账号', 'cloudflare', 'cloudflareAccounts', '/site/cloudflare/index.vue', 3, ['verify' => '校验 Token']),
             ]),
@@ -33,10 +34,11 @@ return new class extends Seeder
 
     /**
      * @param  array<string, string>  $extraActions
+     * @param  array<string, string>|null  $actions
      */
-    protected function menu(string $name, string $route, string $controller, string $component, int $sort, array $extraActions = []): array
+    protected function menu(string $name, string $route, string $controller, string $component, int $sort, array $extraActions = [], ?array $actions = null, bool $hidden = false): array
     {
-        $actions = ['index' => '列表', 'store' => '新增', 'show' => '读取', 'update' => '更新', 'destroy' => '删除', 'enable' => '禁用/启用'] + $extraActions;
+        $actions = ($actions ?? ['index' => '列表', 'store' => '新增', 'show' => '读取', 'update' => '更新', 'destroy' => '删除', 'enable' => '禁用/启用']) + $extraActions;
 
         $buttons = [];
         $buttonSort = 1;
@@ -58,6 +60,8 @@ return new class extends Seeder
             'component' => $component,
             'type' => 2,
             'sort' => $sort,
+            // 只用于分配按钮权限的菜单不在侧边栏显示
+            'hidden' => $hidden ? 2 : 1,
         ], $buttons);
     }
 

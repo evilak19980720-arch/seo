@@ -6,8 +6,10 @@ namespace Modules\Site\Models;
 
 use Catch\Base\CatchModel as Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 use Modules\Site\Enums\OnboardStatus;
+use Modules\Site\Jobs\GenerateGameProfile;
 use Modules\Site\Jobs\OnboardSite;
 
 /**
@@ -25,6 +27,7 @@ use Modules\Site\Jobs\OnboardSite;
  * @property int $status
  * @property Server|null $server
  * @property CloudflareAccount|null $cloudflareAccount
+ * @property GameProfile|null $profile
  */
 class Site extends Model
 {
@@ -65,6 +68,11 @@ class Site extends Model
         return $this->belongsTo(Server::class, 'server_id');
     }
 
+    public function profile(): HasOne
+    {
+        return $this->hasOne(GameProfile::class, 'site_id');
+    }
+
     public function cloudflareAccount(): BelongsTo
     {
         return $this->belongsTo(CloudflareAccount::class, 'cloudflare_account_id');
@@ -98,7 +106,9 @@ class Site extends Model
             return static::query()->find($this->storeBy($data));
         });
 
-        OnboardSite::dispatch($site->id)->afterCommit();
+        OnboardSite::dispatch($site->id);
+        GameProfile::forSite($site->id);
+        GenerateGameProfile::dispatch($site->id);
 
         return $site->id;
     }

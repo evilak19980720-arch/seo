@@ -25,6 +25,7 @@ class SitesController extends Controller
         return $this->model->setBeforeGetList(fn ($query) => $query->with([
             'server:id,name,ip',
             'cloudflareAccount:id,name',
+            'profile:id,site_id,status',
         ]))->getList();
     }
 
