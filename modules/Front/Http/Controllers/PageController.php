@@ -65,7 +65,7 @@ class PageController
 
     public function robots(): Response
     {
-        $lines = ['User-agent: *', 'Allow: /', '', 'Sitemap: '.$this->current->url('sitemap.xml')];
+        $lines = ['User-agent: *', 'Allow: /', 'Disallow: /go/', '', 'Sitemap: '.$this->current->url('sitemap.xml')];
 
         return response(implode("\n", $lines)."\n")->header('Content-Type', 'text/plain; charset=UTF-8');
     }
