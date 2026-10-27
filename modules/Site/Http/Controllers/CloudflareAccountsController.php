@@ -68,7 +68,7 @@ class CloudflareAccountsController extends Controller
     {
         $account = $this->model->newQuery()->findOrFail($id);
 
-        if (! $account->client()->verifyToken()) {
+        if (! $account->client()->verifyToken($account->account_id)) {
             throw new FailedException('API Token 不可用，请检查权限或是否过期');
         }
 

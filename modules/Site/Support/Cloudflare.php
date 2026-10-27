@@ -20,8 +20,19 @@ class Cloudflare
     ) {
     }
 
-    public function verifyToken(): bool
+    /**
+     * 校验 Token。账户令牌（cfat_ 开头）只能用账户下的校验接口，用户令牌用 /user 接口
+     */
+    public function verifyToken(?string $accountId = null): bool
     {
+        if ($accountId) {
+            try {
+                return ($this->request('get', "/accounts/{$accountId}/tokens/verify")['status'] ?? '') === 'active';
+            } catch (FailedException) {
+                // 不是这个账户的令牌，再按用户令牌校验
+            }
+        }
+
         return ($this->request('get', '/user/tokens/verify')['status'] ?? '') === 'active';
     }
 
