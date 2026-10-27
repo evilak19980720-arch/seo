@@ -41,7 +41,7 @@ class CloudflareAccount extends Model
 
     public function client(): Cloudflare
     {
-        return new Cloudflare($this->api_token);
+        return new Cloudflare(trim((string) $this->api_token));
     }
 
     /**
