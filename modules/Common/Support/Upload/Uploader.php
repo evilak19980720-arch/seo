@@ -6,6 +6,7 @@ use Catch\Exceptions\FailedException;
 use Illuminate\Http\UploadedFile;
 use Modules\Common\Events\UploadedEvent;
 use Modules\Common\Support\Upload\Uses\ChunkUpload;
+use Modules\Common\Support\Upload\Uses\CloudUpload;
 use Modules\Common\Support\Upload\Uses\LocalUpload;
 
 class Uploader
@@ -46,6 +47,12 @@ class Uploader
      */
     public function getDriver()
     {
+        // 上传配置里选了 S3 或阿里云 OSS 时，服务端直接上传到对象存储
+        $configured = (string) config('upload.driver');
+        if ($this->driver === 'local' && in_array($configured, ['s3', 'oss'], true)) {
+            return new CloudUpload($configured);
+        }
+
         $drivers = $this->getDrivers();
 
         $driver = $drivers[$this->driver] ?? null;

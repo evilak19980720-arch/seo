@@ -51,6 +51,9 @@
         @endif
         @include('front::partials.slot', ['slot' => 'article_top', 'context' => ['article' => $article]])
         {!! $html !!}
+        @if ($current->ctaUrl())
+            <p style="margin:28px 0">{!! \Modules\Front\Support\ThemeRenderer::cta($current) !!}</p>
+        @endif
         @include('front::partials.slot', ['slot' => 'article_bottom', 'context' => ['article' => $article]])
     </article>
 

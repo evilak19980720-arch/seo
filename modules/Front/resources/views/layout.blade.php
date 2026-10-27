@@ -8,6 +8,8 @@
     $logo = \Modules\Front\Support\CurrentSite::asset($site->logo);
     $schemas = array_values(array_filter($schemas ?? []));
     $global = \Modules\Front\Models\FrontSetting::values();
+    $theme = $current->theme();
+    $render = fn (string $html) => \Modules\Front\Support\ThemeRenderer::render($html, $current, (string) $global['footer_text']);
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $site->locale ?: 'pt-BR' }}">
@@ -51,6 +53,7 @@
         .brand { display: flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 700; font-size: 1.1rem; }
         .brand img { width: 36px; height: 36px; border-radius: 8px; }
         header.top nav a { color: var(--fg); text-decoration: none; margin-left: 20px; }
+        header.top nav a.cta { color: #fff; padding: 6px 14px; }
         header.top nav a:hover { color: var(--brand); }
         main { padding: 32px 0 48px; }
         h1 { font-size: 2rem; line-height: 1.25; margin: 0 0 12px; }
@@ -76,21 +79,29 @@
         footer.bottom { border-top: 1px solid var(--line); padding: 24px 0; font-size: .9rem; color: var(--muted); }
         @media (max-width: 640px) { h1 { font-size: 1.6rem; } header.top nav a { margin-left: 12px; } }
     </style>
+    @if ($theme)
+        {{-- 站点模板（AI 生成、已清理并经人工确认） --}}
+        <style>{!! $theme['css'] !!}</style>
+    @endif
     {!! $global['head_code'] !!}
 </head>
 <body>
-<header class="top">
-    <div class="wrap">
-        <a class="brand" href="/">
-            @if ($logo)<img src="{{ $logo }}" alt="{{ $site->name }}" width="36" height="36">@endif
-            <span>{{ $site->name }}</span>
-        </a>
-        <nav>
-            <a href="/">Início</a>
-            <a href="/artigos">Artigos</a>
-        </nav>
-    </div>
-</header>
+@if ($theme && $theme['header'] !== '')
+    {!! $render($theme['header']) !!}
+@else
+    <header class="top">
+        <div class="wrap">
+            <a class="brand" href="/">
+                @if ($logo)<img src="{{ $logo }}" alt="{{ $site->name }}" width="36" height="36">@endif
+                <span>{{ $site->name }}</span>
+            </a>
+            <nav>
+                {!! \Modules\Front\Support\ThemeRenderer::nav() !!}
+                {!! \Modules\Front\Support\ThemeRenderer::cta($current, 'btn cta') !!}
+            </nav>
+        </div>
+    </header>
+@endif
 @include('front::partials.slot', ['slot' => 'header'])
 <main>
     <div class="wrap">
@@ -98,13 +109,19 @@
     </div>
 </main>
 @include('front::partials.slot', ['slot' => 'footer'])
-<footer class="bottom">
-    <div class="wrap">
-        © {{ date('Y') }} {{ $site->name }}. Site oficial.
-        @if ($global['footer_text'])<div>{{ str_replace('{site}', $site->name, $global['footer_text']) }}</div>@endif
-    </div>
-</footer>
+@if ($theme && $theme['footer'] !== '')
+    {!! $render($theme['footer']) !!}
+@else
+    <footer class="bottom">
+        <div class="wrap">
+            © {{ date('Y') }} {{ $site->name }}. Site oficial.
+            @if ($global['footer_text'])<div>{{ str_replace('{site}', $site->name, $global['footer_text']) }}</div>@endif
+        </div>
+    </footer>
+@endif
 @stack('scripts')
+{{-- 访问量和按钮点击上报（data-track 的元素被点击时记录一次） --}}
+<script>(function(){function s(e){try{navigator.sendBeacon('/t',new Blob([JSON.stringify({e:e})],{type:'application/json'}))}catch(x){}}s('pv');document.addEventListener('click',function(v){var a=v.target.closest&&v.target.closest('[data-track]');if(a)s(a.getAttribute('data-track'))})})();</script>
 {!! $global['body_code'] !!}
 </body>
 </html>

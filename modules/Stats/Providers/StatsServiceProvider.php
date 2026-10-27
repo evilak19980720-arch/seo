@@ -10,10 +10,13 @@ use Illuminate\Foundation\Events\Terminating;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Modules\Front\Http\Middleware\ResolveSite;
 use Modules\Front\Support\CurrentSite;
 use Modules\Stats\Console\PruneCrawls;
 use Modules\Stats\Console\PullCloudflare;
+use Modules\Stats\Http\Controllers\TrackController;
 use Modules\Stats\Support\Crawler;
 use Modules\Stats\Support\Stats;
 
@@ -35,6 +38,11 @@ class StatsServiceProvider extends CatchModuleServiceProvider
         });
 
         $this->recordCrawls();
+
+        if (! $this->app->routesAreCached()) {
+            // 前台访问量、按钮点击上报
+            Route::middleware([ResolveSite::class])->post('t', TrackController::class);
+        }
     }
 
     /**

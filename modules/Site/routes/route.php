@@ -7,6 +7,7 @@ use Modules\Site\Http\Controllers\CloudflareAccountsController;
 use Modules\Site\Http\Controllers\DnsTasksController;
 use Modules\Site\Http\Controllers\GameProfilesController;
 use Modules\Site\Http\Controllers\SitesController;
+use Modules\Site\Http\Controllers\SiteTemplatesController;
 
 Route::prefix('site')->group(function () {
     // Cloudflare 账号
@@ -32,5 +33,12 @@ Route::prefix('site')->group(function () {
     Route::post('sites/{id}/profile/regenerate', [GameProfilesController::class, 'regenerate'])->whereNumber('id');
     Route::post('sites/{id}/profile/confirm', [GameProfilesController::class, 'confirm'])->whereNumber('id');
     Route::post('sites/{id}/profile/unconfirm', [GameProfilesController::class, 'unconfirm'])->whereNumber('id');
+    // 站点模板（按站点 ID）
+    Route::get('sites/{id}/template', [SiteTemplatesController::class, 'show'])->whereNumber('id');
+    Route::put('sites/{id}/template', [SiteTemplatesController::class, 'update'])->whereNumber('id');
+    Route::get('sites/{id}/template/preview', [SiteTemplatesController::class, 'preview'])->whereNumber('id');
+    Route::post('sites/{id}/template/generate', [SiteTemplatesController::class, 'generate'])->whereNumber('id');
+    Route::post('sites/{id}/template/publish', [SiteTemplatesController::class, 'publish'])->whereNumber('id');
+    Route::post('sites/{id}/template/unpublish', [SiteTemplatesController::class, 'unpublish'])->whereNumber('id');
     // next
 });

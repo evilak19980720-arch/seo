@@ -63,6 +63,11 @@ class Site extends Model
         'status' => 'integer',
     ];
 
+    public function template(): HasOne
+    {
+        return $this->hasOne(SiteTemplate::class, 'site_id');
+    }
+
     public function profile(): HasOne
     {
         return $this->hasOne(GameProfile::class, 'site_id');
@@ -97,8 +102,12 @@ class Site extends Model
             throw new FailedException('请填写解析 IP，或在「全局配置」里设置默认解析 IP');
         }
         $data['onboard_status'] = OnboardStatus::Pending->value;
+        $template = ['reference_image' => (string) ($data['reference_image'] ?? ''), 'style_notes' => (string) ($data['style_notes'] ?? '')];
+        unset($data['reference_image'], $data['style_notes']);
 
         $site = static::query()->find($this->storeBy($data));
+        SiteTemplate::forSite($site->id)->update($template);
+        app(SiteTemplate::class)->generate($site->id);
 
         OnboardSite::dispatch($site->id);
         GameProfile::forSite($site->id);
@@ -112,7 +121,7 @@ class Site extends Model
      */
     public function updateSite(int $id, array $data): mixed
     {
-        unset($data['domain'], $data['cloudflare_account_id']);
+        unset($data['domain'], $data['cloudflare_account_id'], $data['reference_image'], $data['style_notes']);
         $site = static::query()->findOrFail($id);
         $ipChanged = ! empty($data['ip']) && $data['ip'] !== $site->ip;
         if (array_key_exists('ip', $data) && ! $data['ip']) {

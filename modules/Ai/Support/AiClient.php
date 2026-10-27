@@ -19,21 +19,31 @@ class AiClient
     ) {
     }
 
-    public function chat(string $system, string $user): ChatResult
+    /**
+     * @param  array<int, array{mime: string, data: string}>  $images  base64 图片，模型需要支持识图
+     */
+    public function chat(string $system, string $user, array $images = []): ChatResult
     {
         return match ($this->channel->provider) {
-            Provider::Anthropic->value => $this->anthropic($system, $user),
-            default => $this->openAi($system, $user),
+            Provider::Anthropic->value => $this->anthropic($system, $user, $images),
+            default => $this->openAi($system, $user, $images),
         };
     }
 
-    protected function openAi(string $system, string $user): ChatResult
+    protected function openAi(string $system, string $user, array $images = []): ChatResult
     {
         $messages = [];
         if ($system !== '') {
             $messages[] = ['role' => 'system', 'content' => $system];
         }
-        $messages[] = ['role' => 'user', 'content' => $user];
+        $content = $user;
+        if ($images) {
+            $content = [['type' => 'text', 'text' => $user]];
+            foreach ($images as $image) {
+                $content[] = ['type' => 'image_url', 'image_url' => ['url' => "data:{$image['mime']};base64,{$image['data']}"]];
+            }
+        }
+        $messages[] = ['role' => 'user', 'content' => $content];
 
         $body = $this->post(rtrim($this->channel->base_url, '/').'/chat/completions', [
             'Authorization' => 'Bearer '.$this->channel->api_key,
@@ -51,13 +61,22 @@ class AiClient
         );
     }
 
-    protected function anthropic(string $system, string $user): ChatResult
+    protected function anthropic(string $system, string $user, array $images = []): ChatResult
     {
+        $content = $user;
+        if ($images) {
+            $content = array_map(fn ($image) => [
+                'type' => 'image',
+                'source' => ['type' => 'base64', 'media_type' => $image['mime'], 'data' => $image['data']],
+            ], $images);
+            $content[] = ['type' => 'text', 'text' => $user];
+        }
+
         $payload = [
             'model' => $this->channel->model,
             'max_tokens' => $this->channel->max_tokens,
             'temperature' => $this->channel->temperature,
-            'messages' => [['role' => 'user', 'content' => $user]],
+            'messages' => [['role' => 'user', 'content' => $content]],
         ];
         if ($system !== '') {
             $payload['system'] = $system;

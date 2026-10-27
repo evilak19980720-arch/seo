@@ -20,7 +20,10 @@ class Ai
     /**
      * @param  array<string, mixed>  $variables
      */
-    public function run(PromptType $type, array $variables, int $siteId = 0): ChatResult
+    /**
+     * @param  array<int, array{mime: string, data: string}>  $images
+     */
+    public function run(PromptType $type, array $variables, int $siteId = 0, array $images = []): ChatResult
     {
         $prompt = Prompt::query()
             ->with('channel')
@@ -38,10 +41,10 @@ class Ai
             throw new FailedException("提示词「{$prompt->name}」没有可用的 AI 渠道");
         }
 
-        return $this->call($channel, $prompt, Prompt::render($prompt->system_prompt, $variables), Prompt::render($prompt->content, $variables), $siteId);
+        return $this->call($channel, $prompt, Prompt::render($prompt->system_prompt, $variables), Prompt::render($prompt->content, $variables), $siteId, $images);
     }
 
-    public function call(Channel $channel, ?Prompt $prompt, string $system, string $user, int $siteId = 0): ChatResult
+    public function call(Channel $channel, ?Prompt $prompt, string $system, string $user, int $siteId = 0, array $images = []): ChatResult
     {
         $startedAt = microtime(true);
         $log = [
@@ -54,7 +57,7 @@ class Ai
         ];
 
         try {
-            $result = (new AiClient($channel))->chat($system, $user);
+            $result = (new AiClient($channel))->chat($system, $user, $images);
 
             CallLog::query()->create($log + [
                 'input_tokens' => $result->inputTokens,

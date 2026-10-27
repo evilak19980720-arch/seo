@@ -9,16 +9,49 @@ use Illuminate\Support\Facades\Cache;
 use Modules\Site\Enums\OnboardStatus;
 use Modules\Site\Models\GameProfile;
 use Modules\Site\Models\Site;
+use Modules\Site\Models\SiteTemplate;
 
 /**
  * 当前请求对应的站点（由 ResolveSite 中间件按 Host 设置）
  */
 class CurrentSite
 {
+    /** @var array{css: string, header: string, footer: string}|null|false false 表示还没读取 */
+    protected array|null|false $theme;
+
+    /**
+     * @param  array{css: string, header: string, footer: string}|null|false  $theme  预览时传入草稿模板
+     */
     public function __construct(
         public readonly Site $site,
-        public readonly GameProfile $profile
+        public readonly GameProfile $profile,
+        array|null|false $theme = false
     ) {
+        $this->theme = $theme;
+    }
+
+    /**
+     * 站点启用的模板，没有时为 null（使用默认样式）
+     *
+     * @return array{css: string, header: string, footer: string}|null
+     */
+    public function theme(): ?array
+    {
+        if ($this->theme === false) {
+            $this->theme = SiteTemplate::published($this->site->id);
+        }
+
+        return $this->theme ?: null;
+    }
+
+    /**
+     * 主按钮（Jogar agora）跳转的商店地址，没有时为空
+     */
+    public function ctaUrl(): string
+    {
+        $links = array_filter($this->profile->store_links ?? []);
+
+        return (string) ($links['google_play'] ?? $links['app_store'] ?? $links['web'] ?? '');
     }
 
     /**

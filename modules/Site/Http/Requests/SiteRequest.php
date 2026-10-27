@@ -45,6 +45,8 @@ class SiteRequest extends FormRequest
             'keywords' => ['nullable', 'string', 'max:500'],
             'logo' => ['nullable', 'string', 'max:500'],
             'game_brief' => ['nullable', 'string', 'max:1000'],
+            'reference_image' => ['nullable', 'string', 'max:500'],
+            'style_notes' => ['nullable', 'string', 'max:1000'],
             'status' => ['sometimes', 'integer', 'in:1,2'],
         ];
     }
@@ -53,7 +55,7 @@ class SiteRequest extends FormRequest
     {
         return [
             'name' => '网站名称', 'domain' => '域名', 'cloudflare_account_id' => 'Cloudflare 账号', 'ip' => '解析 IP',
-            'locale' => '语言', 'title' => '标题', 'description' => '描述', 'keywords' => '关键词', 'logo' => 'Logo', 'game_brief' => '游戏说明',
+            'locale' => '语言', 'title' => '标题', 'description' => '描述', 'keywords' => '关键词', 'logo' => 'Logo', 'game_brief' => '游戏说明', 'reference_image' => '模板参考图', 'style_notes' => '风格说明',
         ];
     }
 

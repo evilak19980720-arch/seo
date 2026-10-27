@@ -14,6 +14,7 @@ enum PromptType: int implements Enum
     case ArticlePolish = 4; // 润色文章
     case ArticleReview = 5; // 审核文章
     case Seo = 6; // 生成标题与描述
+    case SiteTemplate = 7; // 生成站点模板
 
     public function value(): int
     {
@@ -29,6 +30,7 @@ enum PromptType: int implements Enum
             self::ArticlePolish => '润色文章',
             self::ArticleReview => '审核文章',
             self::Seo => '生成标题与描述',
+            self::SiteTemplate => '生成站点模板',
         };
     }
 
@@ -48,6 +50,7 @@ enum PromptType: int implements Enum
             self::ArticlePolish => $site + ['article' => '文章正文'],
             self::ArticleReview => $site + ['article' => '文章正文', 'existing_titles' => '本站已有文章标题'],
             self::Seo => $site + ['article' => '文章正文'],
+            self::SiteTemplate => ['site_name' => '网站名称', 'locale' => '语言代码', 'genre' => '游戏类型', 'style_notes' => '风格说明', 'has_image' => '是否附带参考图（yes/no）'],
         };
     }
 }

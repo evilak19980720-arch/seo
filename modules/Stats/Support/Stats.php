@@ -23,6 +23,10 @@ class Stats
 
     public const AD_CLICKS = 'ad_clicks';
 
+    public const PAGEVIEWS = 'pageviews';
+
+    public const CLICKS = 'clicks';
+
     /**
      * @return array<string, string>
      */
@@ -31,6 +35,8 @@ class Stats
         return [
             self::CRAWL_GOOGLE => 'Googlebot 抓取',
             self::CRAWL_BING => 'Bingbot 抓取',
+            self::PAGEVIEWS => '访问量',
+            self::CLICKS => '按钮点击',
             self::CF_PAGEVIEWS => '页面浏览（Cloudflare）',
             self::CF_UNIQUES => '独立访客（Cloudflare）',
             self::CF_REQUESTS => '请求数（Cloudflare）',

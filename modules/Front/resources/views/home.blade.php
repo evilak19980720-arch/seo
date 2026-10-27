@@ -32,7 +32,7 @@
         @if ($stores)
             <p style="display:flex;flex-wrap:wrap;gap:12px">
                 @foreach ($stores as $key => $url)
-                    <a class="btn{{ $loop->first ? '' : ' ghost' }}" href="{{ $url }}" rel="noopener" target="_blank">{{ $storeLabels[$key] ?? $url }}</a>
+                    <a class="btn{{ $loop->first ? '' : ' ghost' }}" href="{{ $url }}" rel="noopener" target="_blank" data-track="cta">{{ $storeLabels[$key] ?? $url }}</a>
                 @endforeach
             </p>
         @endif
