@@ -7,6 +7,7 @@
     $image = $image ?? \Modules\Front\Support\CurrentSite::asset(($current->profile->screenshots ?? [])[0] ?? $site->logo);
     $logo = \Modules\Front\Support\CurrentSite::asset($site->logo);
     $schemas = array_values(array_filter($schemas ?? []));
+    $global = \Modules\Front\Models\FrontSetting::values();
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $site->locale ?: 'pt-BR' }}">
@@ -75,6 +76,7 @@
         footer.bottom { border-top: 1px solid var(--line); padding: 24px 0; font-size: .9rem; color: var(--muted); }
         @media (max-width: 640px) { h1 { font-size: 1.6rem; } header.top nav a { margin-left: 12px; } }
     </style>
+    {!! $global['head_code'] !!}
 </head>
 <body>
 <header class="top">
@@ -97,8 +99,12 @@
 </main>
 @include('front::partials.slot', ['slot' => 'footer'])
 <footer class="bottom">
-    <div class="wrap">© {{ date('Y') }} {{ $site->name }}. Site oficial.</div>
+    <div class="wrap">
+        © {{ date('Y') }} {{ $site->name }}. Site oficial.
+        @if ($global['footer_text'])<div>{{ str_replace('{site}', $site->name, $global['footer_text']) }}</div>@endif
+    </div>
 </footer>
 @stack('scripts')
+{!! $global['body_code'] !!}
 </body>
 </html>

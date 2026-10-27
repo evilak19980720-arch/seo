@@ -6,13 +6,17 @@ namespace Modules\Ad\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Modules\Ad\Models\Ad;
+use Modules\Front\Support\CurrentSite;
+use Modules\Stats\Support\Stats;
 
 class ClickController
 {
-    public function __invoke($id): RedirectResponse
+    public function __invoke($id, CurrentSite $current): RedirectResponse
     {
         $link = Ad::click((int) $id);
         abort_unless($link, 404);
+
+        Stats::add($current->site->id, Stats::AD_CLICKS);
 
         return redirect()->away($link, 302)->withHeaders([
             'X-Robots-Tag' => 'noindex, nofollow',

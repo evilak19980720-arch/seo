@@ -9,6 +9,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Modules\Content\Enums\ArticleStatus;
 use Modules\Content\Models\Article;
+use Modules\Front\Models\FrontSetting;
 use Modules\Front\Support\CurrentSite;
 
 class PageController
@@ -68,6 +69,16 @@ class PageController
         $lines = ['User-agent: *', 'Allow: /', 'Disallow: /go/', '', 'Sitemap: '.$this->current->url('sitemap.xml')];
 
         return response(implode("\n", $lines)."\n")->header('Content-Type', 'text/plain; charset=UTF-8');
+    }
+
+    /**
+     * IndexNow 验证文件
+     */
+    public function indexNowKey(string $key): Response
+    {
+        abort_unless(FrontSetting::get('indexnow_enabled') && hash_equals(FrontSetting::indexNowKey(), $key), 404);
+
+        return response($key)->header('Content-Type', 'text/plain; charset=UTF-8');
     }
 
     protected function published()

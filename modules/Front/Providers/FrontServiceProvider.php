@@ -13,6 +13,7 @@ use Modules\Content\Events\ArticleUnpublished;
 use Modules\Front\Http\Controllers\PageController;
 use Modules\Front\Http\Middleware\CachePage;
 use Modules\Front\Http\Middleware\ResolveSite;
+use Modules\Front\Jobs\PingIndexNow;
 use Modules\Front\Jobs\PurgeEdgeCache;
 use Modules\Front\Support\CurrentSite;
 use Modules\Front\Support\PageCache;
@@ -46,6 +47,7 @@ class FrontServiceProvider extends CatchModuleServiceProvider
             Route::get('artigos/{slug}', [PageController::class, 'article'])->where('slug', '[a-z0-9-]+');
             Route::get('sitemap.xml', [PageController::class, 'sitemap']);
             Route::get('robots.txt', [PageController::class, 'robots']);
+            Route::get('{key}.txt', [PageController::class, 'indexNowKey'])->where('key', '[a-f0-9]{32}');
             // 其他路径也经过站点中间件，才能显示站点自己的 404 页面
             Route::fallback(fn () => abort(404));
         });
@@ -60,6 +62,7 @@ class FrontServiceProvider extends CatchModuleServiceProvider
             $article = $event->article;
             PageCache::flush($article->site_id);
             PurgeEdgeCache::dispatch($article->site_id, ['/', 'artigos', 'artigos/'.$article->slug, 'sitemap.xml']);
+            PingIndexNow::dispatch($article->site_id, ['artigos/'.$article->slug]);
         };
         Event::listen(ArticlePublished::class, $articleChanged);
         Event::listen(ArticleUnpublished::class, $articleChanged);
@@ -94,13 +97,6 @@ class FrontServiceProvider extends CatchModuleServiceProvider
             return response()->view('front::error', ['current' => $this->app->make(CurrentSite::class), 'status' => $e->getStatusCode()], $e->getStatusCode())
                 ->header('X-Robots-Tag', 'noindex');
         });
-    }
-
-    /**
-     * 前台路由在 boot 里注册，不使用后台的 api 路由文件
-     */
-    protected function loadModuleRoute(): void
-    {
     }
 
     public function moduleName(): string

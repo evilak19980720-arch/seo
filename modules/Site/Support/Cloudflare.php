@@ -100,6 +100,23 @@ class Cloudflare
         }
     }
 
+    /**
+     * GraphQL 分析接口（Token 需要 Analytics Read 权限）
+     */
+    public function graphql(string $query, array $variables = []): array
+    {
+        $response = $this->http()->post(self::BASE_URL.'/graphql', ['query' => $query, 'variables' => $variables]);
+        $body = $response->json() ?? [];
+
+        if (! $response->successful() || ! empty($body['errors'])) {
+            $message = collect($body['errors'] ?? [])->pluck('message')->implode('; ');
+
+            throw new FailedException('Cloudflare 分析接口错误：'.($message ?: 'HTTP '.$response->status()));
+        }
+
+        return $body['data'] ?? [];
+    }
+
     protected function request(string $method, string $path, array $data = []): mixed
     {
         $response = $this->http()->{$method}(self::BASE_URL.$path, $data);
