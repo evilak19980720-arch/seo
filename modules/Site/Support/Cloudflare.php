@@ -88,6 +88,18 @@ class Cloudflare
     /**
      * @param  array<string, mixed>  $data
      */
+    /**
+     * 按 URL 清除 Cloudflare 缓存（每次最多 30 个）
+     *
+     * @param  array<int, string>  $urls
+     */
+    public function purgeFiles(string $zoneId, array $urls): void
+    {
+        foreach (array_chunk(array_values(array_unique($urls)), 30) as $chunk) {
+            $this->request('post', "/zones/{$zoneId}/purge_cache", ['files' => $chunk]);
+        }
+    }
+
     protected function request(string $method, string $path, array $data = []): mixed
     {
         $response = $this->http()->{$method}(self::BASE_URL.$path, $data);
